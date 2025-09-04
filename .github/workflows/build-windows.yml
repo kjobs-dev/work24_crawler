@@ -1,0 +1,75 @@
+name: Build Windows GUI Executable
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-windows-gui:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install UV package manager
+      run: |
+        irm https://astral.sh/uv/install.ps1 | iex
+        echo "$env:USERPROFILE\.cargo\bin" >> $env:GITHUB_PATH
+    
+    - name: Verify UV installation
+      run: |
+        refreshenv
+        uv --version
+    
+    - name: Install project dependencies
+      run: |
+        uv sync --all-extras
+    
+    - name: Install PyInstaller
+      run: |
+        uv add --dev pyinstaller
+    
+    - name: Verify tkinter availability
+      run: |
+        uv run python -c "import tkinter; print('tkinter works on Windows!')"
+    
+    - name: Build Windows GUI executable
+      run: |
+        uv run python scripts/build_gui.py
+    
+    - name: List build output
+      run: |
+        dir release_gui
+        echo "File size of GUI executable:"
+        (Get-Item "release_gui/AI-noye_Job_Crawler_GUI.exe").length / 1MB
+    
+    - name: Upload Windows GUI executable
+      uses: actions/upload-artifact@v3
+      with:
+        name: AI-noye_Job_Crawler_Windows_GUI
+        path: release_gui/
+        retention-days: 90
+        
+    - name: Create GitHub Release (on tags)
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          release_gui/AI-noye_Job_Crawler_GUI.exe
+          release_gui/ai-noye-logo.png
+          release_gui/README.txt
+        name: Release ${{ github.ref_name }}
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
