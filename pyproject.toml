@@ -86,3 +86,6 @@ dev = [
     "pyinstaller>=6.15.0",
     "altgraph>=0.17.2",
 ]
+
+[tool.pyinstaller]
+paths = ["src"]

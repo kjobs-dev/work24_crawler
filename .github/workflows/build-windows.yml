@@ -37,11 +37,17 @@ jobs:
     
     - name: Install PyInstaller
       run: |
-        uv add --dev pyinstaller
+        uv add --dev pyinstaller>=6.15.0
     
     - name: Verify tkinter availability
       run: |
         uv run python -c "import tkinter; print('tkinter works on Windows!')"
+    
+    - name: List build scripts
+      run: |
+        dir scripts
+        echo "Contents of scripts directory:"
+        Get-ChildItem scripts -Name
     
     - name: Build Windows GUI executable
       run: |
