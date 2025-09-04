@@ -28,29 +28,38 @@ jobs:
     
     - name: Verify UV installation
       run: |
-        refreshenv
+        $env:PATH = "$env:USERPROFILE\.cargo\bin;$env:PATH"
         uv --version
     
     - name: Install project dependencies
       run: |
-        uv sync --all-extras
+        $env:PATH = "$env:USERPROFILE\.cargo\bin;$env:PATH"
+        uv sync
     
     - name: Install PyInstaller
       run: |
+        $env:PATH = "$env:USERPROFILE\.cargo\bin;$env:PATH"
         uv add --dev pyinstaller>=6.15.0
     
     - name: Verify tkinter availability
       run: |
+        $env:PATH = "$env:USERPROFILE\.cargo\bin;$env:PATH"
         uv run python -c "import tkinter; print('tkinter works on Windows!')"
     
-    - name: List build scripts
+    - name: List project structure
       run: |
-        dir scripts
-        echo "Contents of scripts directory:"
+        echo "=== Project Root ==="
+        Get-ChildItem -Name
+        echo "`n=== Scripts Directory ==="
         Get-ChildItem scripts -Name
+        echo "`n=== Assets Directory ==="
+        Get-ChildItem assets -Name
+        echo "`n=== Source Directory ==="
+        Get-ChildItem src -Name
     
     - name: Build Windows GUI executable
       run: |
+        $env:PATH = "$env:USERPROFILE\.cargo\bin;$env:PATH"
         uv run python scripts/build_gui.py
     
     - name: List build output
