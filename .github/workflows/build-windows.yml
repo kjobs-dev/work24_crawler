@@ -21,30 +21,25 @@ jobs:
       with:
         python-version: '3.11'
     
-    - name: Install UV package manager
+    - name: Install dependencies with pip
       run: |
-        irm https://astral.sh/uv/install.ps1 | iex
-        echo "$env:USERPROFILE\.cargo\bin" >> $env:GITHUB_PATH
-    
-    - name: Verify UV installation
-      run: |
-        $env:PATH = "$env:USERPROFILE\.cargo\bin;$env:PATH"
-        uv --version
-    
-    - name: Install project dependencies
-      run: |
-        $env:PATH = "$env:USERPROFILE\.cargo\bin;$env:PATH"
-        uv sync
-    
-    - name: Install PyInstaller
-      run: |
-        $env:PATH = "$env:USERPROFILE\.cargo\bin;$env:PATH"
-        uv add --dev pyinstaller>=6.15.0
+        python -m pip install --upgrade pip
+        pip install pyinstaller>=6.15.0
+        pip install selenium>=4.15.0
+        pip install undetected-chromedriver>=3.5.4
+        pip install pandas>=2.1.0
+        pip install openpyxl>=3.1.2
+        pip install pydantic>=2.5.0
+        pip install pydantic-settings>=2.1.0
+        pip install fake-useragent>=1.4.0
+        pip install python-dotenv>=1.0.0
+        pip install structlog>=23.2.0
+        pip install rich>=13.7.0
+        pip install setuptools>=80.9.0
     
     - name: Verify tkinter availability
       run: |
-        $env:PATH = "$env:USERPROFILE\.cargo\bin;$env:PATH"
-        uv run python -c "import tkinter; print('tkinter works on Windows!')"
+        python -c "import tkinter; print('✅ tkinter works on Windows!')"
     
     - name: List project structure
       run: |
@@ -57,16 +52,56 @@ jobs:
         echo "`n=== Source Directory ==="
         Get-ChildItem src -Name
     
-    - name: Build Windows GUI executable
+    - name: Build Windows GUI executable directly with PyInstaller
       run: |
-        $env:PATH = "$env:USERPROFILE\.cargo\bin;$env:PATH"
-        uv run python scripts/build_gui.py
+        echo "🔨 Building Windows GUI executable..."
+        pyinstaller --clean --noconfirm scripts/build_gui.spec
+    
+    - name: Create release directory and copy files
+      run: |
+        echo "📦 Creating release package..."
+        New-Item -ItemType Directory -Force -Path "release_gui"
+        Copy-Item "dist/AI-noye_Job_Crawler_GUI.exe" "release_gui/"
+        Copy-Item "assets/ai-noye-logo.png" "release_gui/"
+        
+        $readmeContent = @"
+# AI-noye Job Crawler GUI Version
+
+## 🚀 How to Use
+
+1. **Run the Application**: Double-click AI-noye_Job_Crawler_GUI.exe
+2. **Fill the Form**: 
+   - Select site (currently Work24 only)
+   - Enter login credentials
+   - Set search keywords (optional)
+   - Choose number of jobs to collect
+   - Select output directory
+3. **Start Crawling**: Click "🚀 크롤링 시작" button
+4. **Monitor Progress**: Watch the log window for real-time updates
+
+## 📋 Requirements
+
+- Internet Connection: Required for job site access
+- Chrome Browser: Must be installed (any version)
+- Windows 10/11: Recommended operating system
+
+## 📁 Output
+
+- Excel files will be saved to your chosen directory
+- Files are named: 채용공고_{timestamp}.xlsx
+- Automatic duplicate detection
+
+---
+Built with ❤️ by AI-noye Team
+"@
+        $readmeContent | Out-File -FilePath "release_gui/README.txt" -Encoding UTF8
     
     - name: List build output
       run: |
-        dir release_gui
-        echo "File size of GUI executable:"
-        (Get-Item "release_gui/AI-noye_Job_Crawler_GUI.exe").length / 1MB
+        echo "=== Release Directory ==="
+        Get-ChildItem release_gui
+        echo "`n=== File Sizes ==="
+        Get-ChildItem release_gui | ForEach-Object { "$($_.Name): $([math]::Round($_.Length / 1MB, 1)) MB" }
     
     - name: Upload Windows GUI executable
       uses: actions/upload-artifact@v3
